@@ -47,3 +47,9 @@ func (b *Boleto) Valor() float64 {
 	}
 
 }
+
+func ExecutarPagamento(p Pagamento) {
+	fmt.Println(p.Processar())
+	fmt.Println(p.Valor())
+
+}
