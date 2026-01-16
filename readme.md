@@ -1,7 +1,8 @@
-🧩 Desafio de Golang — Structs, Interfaces e Composição
+🧩 Desafio de Golang (Versão Revisada e Organizada)
+Foco: Structs, Interfaces, Composição e Responsabilidade Clara
 🎯 Objetivo
 
-Desenvolver um sistema simples de pagamentos, utilizando os conceitos fundamentais de programação orientada a objetos em Go, com foco em:
+Implementar um sistema simples de pagamentos, usando Go de forma idiomática, com:
 
 Structs
 
@@ -9,145 +10,188 @@ Interfaces
 
 Métodos
 
-Composição (structs aninhadas)
+Composição (sem herança)
 
-Tratamento de erros
+Polimorfismo real
 
-📌 Requisitos Funcionais
-1️⃣ Usuário
+Tratamento de erro
 
-Crie uma estrutura que represente um usuário do sistema.
+O foco é design limpo, não quantidade de código.
 
-O usuário deve possuir:
+🧠 Princípios de Design (importante)
 
-Um identificador único
+Wallet guarda estado (saldo e histórico)
+
+Métodos de pagamento executam lógica, não armazenam histórico
+
+Transação é um registro de fato ocorrido, não um serviço
+
+User coordena a operação (caso de uso)
+
+📌 Modelo Conceitual
+User
+ └── Wallet
+      ├── Balance
+      └── Transactions[]
+
+User → usa → PaymentMethod (interface)
+PaymentMethod ← CreditCard | Pix
+
+📌 Requisitos Funcionais (Reescritos)
+1️⃣ Usuário (User)
+
+Crie uma struct User que represente um usuário do sistema.
+
+O usuário deve conter:
+
+ID
 
 Nome
 
-E-mail
+Email
 
-Uma carteira financeira, que deve ser representada por outra estrutura
+Uma Wallet embutida (composição obrigatória)
 
-A carteira não deve existir separada do usuário (use composição).
+Responsabilidade do User
+
+Orquestrar a operação de pagamento
+
+Não executar lógica específica de cartão ou PIX
 
 2️⃣ Carteira (Wallet)
 
-A carteira é responsável por:
+Crie uma struct Wallet responsável por:
 
 Armazenar o saldo atual
 
-Manter o histórico de transações realizadas
+Armazenar o histórico de transações
 
-Cada transação deve ser registrada dentro da carteira do usuário.
+Regras
 
-3️⃣ Interface de Pagamento
+A carteira não existe sem o usuário
 
-Crie uma interface que represente um método de pagamento genérico.
+Apenas a carteira:
 
-Essa interface deve obrigar qualquer implementação a:
+Atualiza saldo
 
-Executar um pagamento dado um valor
+Registra transações
 
-Informar o nome do método de pagamento utilizado
+3️⃣ Transação (Transaction)
 
-O sistema não pode conhecer o tipo concreto do método de pagamento (polimorfismo obrigatório).
+Crie uma struct Transaction que represente um evento financeiro ocorrido.
 
-4️⃣ Métodos de Pagamento
+Cada transação deve conter:
 
-Implemente dois tipos diferentes de pagamento, ambos devem atender à interface criada.
+ID
 
-a) Cartão de Crédito
+Valor
 
-O cartão deve conter:
+Nome do método de pagamento
 
-Identificação do cartão
+Status (SUCCESS ou FAILED)
+
+Observação importante
+
+👉 Transaction não possui métodos de negócio, é apenas um registro de dados.
+
+4️⃣ Interface de Método de Pagamento
+
+Crie uma interface PaymentMethod.
+
+Ela deve obrigar qualquer implementação a:
+
+type PaymentMethod interface {
+    Pay(amount float64) error
+    Name() string
+}
+
+Regras
+
+Nenhum código deve conhecer o tipo concreto (CreditCard, Pix, etc)
+
+Não pode haver if ou switch para identificar o método
+
+5️⃣ Métodos de Pagamento (Implementações)
+a) Cartão de Crédito (CreditCard)
+
+A struct deve conter:
+
+ID do cartão
 
 Limite total
 
 Limite disponível
 
-Regras:
+Regras
 
-Não permitir pagamentos acima do limite disponível
+Não permitir pagamento acima do limite disponível
 
-Reduzir o limite disponível após um pagamento bem-sucedido
+Reduzir o limite disponível após pagamento bem-sucedido
 
-b) PIX
+b) PIX (Pix)
 
-O PIX deve conter:
+A struct deve conter:
 
-Identificação da chave
+Chave PIX
 
 Limite diário disponível
 
-Regras:
+Regras
 
-Não permitir pagamentos acima do limite diário
+Não permitir pagamento acima do limite diário
 
-Reduzir o limite diário após um pagamento bem-sucedido
+Reduzir o limite diário após pagamento bem-sucedido
 
-5️⃣ Transação
+6️⃣ Caso de Uso: Realizar Pagamento
 
-Crie uma estrutura que represente uma transação financeira.
+Crie um método do User:
 
-Cada transação deve conter:
+func (u *User) MakePayment(method PaymentMethod, amount float64) error
 
-Identificador
+Fluxo correto:
 
-Valor
+Solicita o pagamento via interface (method.Pay)
 
-Método de pagamento utilizado
+Se falhar:
 
-Status da operação (ex: sucesso ou falha)
+Retorna erro
 
-6️⃣ Operação Principal
+NÃO altera saldo
 
-Implemente uma operação que permita ao usuário realizar um pagamento.
+NÃO registra transação
 
-Essa operação deve:
+Se tiver sucesso:
 
-Receber um método de pagamento (interface)
+Atualiza o saldo da Wallet
 
-Receber o valor da transação
+Cria uma Transaction com status SUCCESS
 
-Tentar executar o pagamento
+Registra a transação na Wallet
 
-Em caso de falha, retornar erro e não registrar transação
+🧪 Cenários Obrigatórios no main
 
-Em caso de sucesso:
+No main.go, demonstre:
 
-Atualizar o saldo da carteira
-
-Registrar a transação no histórico
-
-⚠️ Essa operação deve ser um método do usuário.
-
-🧪 Cenários de Teste Obrigatórios
-
-No programa principal, crie cenários que validem:
-
-Criação de um usuário com carteira vazia
+Criação de usuário com saldo zero
 
 Pagamento válido com cartão
 
-Pagamento inválido com cartão (excede limite)
+Pagamento inválido com cartão (limite excedido)
 
 Pagamento válido com PIX
 
-Impressão do saldo final
+Impressão:
 
-Impressão do histórico de transações
+Saldo final da carteira
+
+Histórico de transações
 
 📐 Restrições Técnicas
 
-❌ Não utilizar herança
+❌ Não usar herança
+❌ Não usar switch ou if para identificar métodos de pagamento
+❌ Não usar bibliotecas externas
 
-❌ Não utilizar switch ou if para identificar o tipo do pagamento
-
-❌ Não utilizar bibliotecas externas
-
-✔️ Utilizar composição
-
-✔️ Utilizar interfaces corretamente
-
-✔️ Utilizar tratamento de erro idiomático do Go
+✔️ Usar composição
+✔️ Usar interfaces corretamente
+✔️ Erros idiomáticos do Go (error)
